@@ -11,9 +11,10 @@ RestWay 是一个面向旅行者的公共厕所检索与标识识别应用。第
 - Expo Router + TypeScript 项目结构
 - iOS-first 首页视觉原型
 - PWA manifest 与主屏幕图标草案
-- 北京市中心默认位置与浏览器定位入口
+- 先定位后查询的浏览器定位流程
+- 定位失败时可显式进入顺义区测试模式，不冒充真实附近结果
 - OpenStreetMap/Overpass 真实厕所数据查询
-- 距离排序、免费/无障碍筛选与 Apple 地图导航
+- 距离排序、免费/无障碍筛选与真实定位后的 Apple 地图导航
 - 公共接口双节点容错、超时和重试状态
 - Roadmap 和架构文档
 - TypeScript 类型检查与 Expo Web 导出验证通过
@@ -39,6 +40,17 @@ pnpm web
 ```
 
 依赖使用工作区内的 pnpm 缓存安装，避免向用户目录写入包管理缓存。
+
+## HTTPS 预览
+
+仓库包含 GitHub Pages 自动部署工作流。推送到 GitHub 的 `main` 分支后，GitHub Actions 会：
+
+1. 安装锁定版本的依赖；
+2. 为当前仓库子路径导出 Expo Web；
+3. 将 `dist` 发布到 GitHub Pages；
+4. 提供可在 iPhone Safari 中请求定位权限的 HTTPS 地址。
+
+首次部署前，需要在 GitHub 仓库的 **Settings → Pages → Source** 中选择 **GitHub Actions**。
 
 ## 文档
 

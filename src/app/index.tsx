@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fetchNearbyToilets } from '../features/toilets/overpass';
 import type { Coordinates, Toilet } from '../features/toilets/types';
 
-const BEIJING_CENTER: Coordinates = { latitude: 39.9042, longitude: 116.4074 };
+const SHUNYI_TEST_CENTER: Coordinates = { latitude: 40.1499, longitude: 116.6615 };
 
 type Filter = 'all' | 'free' | 'wheelchair';
-type LoadState = 'loading' | 'ready' | 'error';
+type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
 const filters: { id: Filter; label: string }[] = [
   { id: 'all', label: '全部' },
@@ -32,7 +32,7 @@ function detailLabels(toilet: Toilet) {
   return labels.length ? labels : ['设施信息待补充'];
 }
 
-function ToiletCard({ toilet }: { toilet: Toilet }) {
+function ToiletCard({ toilet, canNavigate }: { toilet: Toilet; canNavigate: boolean }) {
   const labels = detailLabels(toilet);
   const openDirections = () => {
     const destination = `${toilet.latitude},${toilet.longitude}`;
@@ -61,21 +61,29 @@ function ToiletCard({ toilet }: { toilet: Toilet }) {
         ))}
       </View>
 
-      <Pressable accessibilityRole="button" onPress={openDirections} style={styles.primaryButton}>
-        <Text style={styles.primaryButtonText}>在 Apple 地图中步行导航</Text>
+      <Pressable
+        accessibilityRole="button"
+        disabled={!canNavigate}
+        onPress={openDirections}
+        style={[styles.primaryButton, !canNavigate && styles.primaryButtonDisabled]}
+      >
+        <Text style={[styles.primaryButtonText, !canNavigate && styles.primaryButtonTextDisabled]}>
+          {canNavigate ? '在 Apple 地图中步行导航' : '真实定位后可开始导航'}
+        </Text>
       </Pressable>
     </View>
   );
 }
 
 export default function HomeScreen() {
-  const [origin, setOrigin] = useState<Coordinates>(BEIJING_CENTER);
-  const [locationLabel, setLocationLabel] = useState('北京 · 默认');
+  const [origin, setOrigin] = useState<Coordinates | null>(null);
+  const [locationLabel, setLocationLabel] = useState('尚未定位');
   const [toilets, setToilets] = useState<Toilet[]>([]);
-  const [loadState, setLoadState] = useState<LoadState>('loading');
-  const [message, setMessage] = useState('正在搜索北京中心附近的公共厕所…');
+  const [loadState, setLoadState] = useState<LoadState>('idle');
+  const [message, setMessage] = useState('请先定位，再搜索真正位于你附近的厕所');
   const [filter, setFilter] = useState<Filter>('all');
   const [isLocating, setIsLocating] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
 
   const loadToilets = useCallback(async (coordinates: Coordinates) => {
     setLoadState('loading');
@@ -92,10 +100,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadToilets(BEIJING_CENTER);
-  }, [loadToilets]);
-
   const visibleToilets = useMemo(() => {
     return toilets.filter((toilet) => {
       if (filter === 'free') return toilet.fee === 'no';
@@ -106,7 +110,7 @@ export default function HomeScreen() {
 
   const useMyLocation = () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setMessage('当前浏览器不支持定位，请继续使用北京默认位置');
+      setMessage('当前浏览器无法获取定位，可以选择顺义区测试模式');
       return;
     }
 
@@ -120,15 +124,25 @@ export default function HomeScreen() {
         };
         setOrigin(nextOrigin);
         setLocationLabel('我的位置');
+        setIsTestMode(false);
         setIsLocating(false);
         void loadToilets(nextOrigin);
       },
       () => {
         setIsLocating(false);
-        setMessage('未能获取位置，继续使用北京默认位置');
+        setLoadState('idle');
+        setMessage('未获得定位权限，可以改用顺义区测试模式');
       },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
+  };
+
+  const useShunyiTestArea = () => {
+    setOrigin(SHUNYI_TEST_CENTER);
+    setLocationLabel('顺义区 · 测试');
+    setIsTestMode(true);
+    setFilter('all');
+    void loadToilets(SHUNYI_TEST_CENTER);
   };
 
   return (
@@ -159,35 +173,58 @@ export default function HomeScreen() {
           <Text style={styles.chevron}>›</Text>
         </Pressable>
 
-        <View style={styles.filters}>
-          {filters.map((item) => (
-            <Pressable
-              accessibilityRole="button"
-              key={item.id}
-              onPress={() => setFilter(item.id)}
-              style={[styles.filterChip, filter === item.id && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterText, filter === item.id && styles.filterTextActive]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={useShunyiTestArea}
+          style={({ pressed }) => [styles.testAreaButton, pressed && styles.buttonPressed]}
+        >
+          <Text style={styles.testAreaText}>暂时无法定位？使用顺义区测试位置</Text>
+        </Pressable>
+
+        {loadState !== 'idle' && (
+          <View style={styles.filters}>
+            {filters.map((item) => (
+              <Pressable
+                accessibilityRole="button"
+                key={item.id}
+                onPress={() => setFilter(item.id)}
+                style={[styles.filterChip, filter === item.id && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterText, filter === item.id && styles.filterTextActive]}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         <View style={styles.mapCard}>
           <View style={[styles.mapLine, styles.mapLineOne]} />
           <View style={[styles.mapLine, styles.mapLineTwo]} />
           <View style={[styles.mapLine, styles.mapLineThree]} />
-          <View style={[styles.mapPin, styles.pinOne]}><Text style={styles.pinText}>WC</Text></View>
-          <View style={[styles.mapPin, styles.pinTwo]}><Text style={styles.pinText}>WC</Text></View>
-          <View style={styles.userPin}><View style={styles.userPinCore} /></View>
+          {loadState !== 'idle' && (
+            <>
+              <View style={[styles.mapPin, styles.pinOne]}><Text style={styles.pinText}>WC</Text></View>
+              <View style={[styles.mapPin, styles.pinTwo]}><Text style={styles.pinText}>WC</Text></View>
+              <View style={styles.userPin}><View style={styles.userPinCore} /></View>
+            </>
+          )}
           <View style={styles.mapMessage}>
             <Text style={styles.mapMessageTitle}>{message}</Text>
-            <Text style={styles.mapMessageMeta}>搜索半径 2 公里 · 地图视图下一步接入</Text>
+            <Text style={styles.mapMessageMeta}>
+              {loadState === 'idle' ? '不会在未定位时自动显示北京中心结果' : '搜索半径 2 公里 · 地图视图下一步接入'}
+            </Text>
           </View>
         </View>
 
-        {loadState === 'error' && (
+        {isTestMode && (
+          <View style={styles.testNotice}>
+            <Text style={styles.testNoticeTitle}>当前是顺义区测试模式</Text>
+            <Text style={styles.testNoticeText}>距离按顺义城区测试坐标计算，并非你的真实位置；为避免误导，导航暂不可用。</Text>
+          </View>
+        )}
+
+        {loadState === 'error' && origin && (
           <Pressable accessibilityRole="button" onPress={() => void loadToilets(origin)} style={styles.retryButton}>
             <Text style={styles.retryText}>重新加载公开数据</Text>
           </Pressable>
@@ -200,18 +237,22 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsTitle}>距离最近</Text>
-          {loadState === 'ready' && <Text style={styles.resultsCount}>显示 {Math.min(visibleToilets.length, 8)} 条</Text>}
-        </View>
+        {loadState !== 'idle' && (
+          <View style={styles.resultsHeader}>
+            <Text style={styles.resultsTitle}>{isTestMode ? '顺义区测试结果' : '距离最近'}</Text>
+            {loadState === 'ready' && <Text style={styles.resultsCount}>显示 {Math.min(visibleToilets.length, 8)} 条</Text>}
+          </View>
+        )}
 
         {visibleToilets.slice(0, 8).map((toilet) => (
-          <ToiletCard key={toilet.id} toilet={toilet} />
+          <ToiletCard canNavigate={!isTestMode} key={toilet.id} toilet={toilet} />
         ))}
 
-        <Pressable onPress={() => void Linking.openURL('https://www.openstreetmap.org/copyright')}>
-          <Text style={styles.attribution}>地点数据 © OpenStreetMap 贡献者 · 公开记录可能不完整</Text>
-        </Pressable>
+        {loadState !== 'idle' && (
+          <Pressable onPress={() => void Linking.openURL('https://www.openstreetmap.org/copyright')}>
+            <Text style={styles.attribution}>地点数据 © OpenStreetMap 贡献者 · 公开记录可能不完整</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -233,6 +274,8 @@ const styles = StyleSheet.create({
   locationButtonTitle: { color: '#14201D', fontSize: 15, fontWeight: '700', marginBottom: 2 },
   locationButtonHint: { color: '#7C8783', fontSize: 12 },
   chevron: { color: '#94A09C', fontSize: 28 },
+  testAreaButton: { alignItems: 'center', paddingVertical: 4, marginBottom: 16 },
+  testAreaText: { color: '#0A7AFF', fontSize: 13, fontWeight: '600' },
   filters: { flexDirection: 'row', gap: 9, marginBottom: 16 },
   filterChip: { borderRadius: 999, backgroundColor: '#E8ECEA', paddingHorizontal: 14, paddingVertical: 9 },
   filterChipActive: { backgroundColor: '#DDF4EE' },
@@ -252,6 +295,9 @@ const styles = StyleSheet.create({
   mapMessage: { position: 'absolute', left: 14, right: 14, bottom: 14, padding: 12, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.94)' },
   mapMessageTitle: { color: '#26332F', fontSize: 13, fontWeight: '700', marginBottom: 3 },
   mapMessageMeta: { color: '#71807B', fontSize: 11 },
+  testNotice: { padding: 15, borderRadius: 16, backgroundColor: '#FFF6DC', marginBottom: 14 },
+  testNoticeTitle: { color: '#745900', fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  testNoticeText: { color: '#806D2E', fontSize: 12, lineHeight: 18 },
   retryButton: { alignItems: 'center', paddingVertical: 13, borderWidth: 1, borderColor: '#B7DCD3', borderRadius: 15, backgroundColor: '#F5FFFC', marginBottom: 16 },
   retryText: { color: '#08735F', fontSize: 14, fontWeight: '700' },
   emptyCard: { padding: 18, borderRadius: 18, backgroundColor: '#FFFFFF', marginBottom: 16 },
@@ -271,7 +317,8 @@ const styles = StyleSheet.create({
   statusPill: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999, backgroundColor: '#E3F7E8' },
   statusText: { color: '#1A7B3F', fontSize: 12, fontWeight: '700' },
   primaryButton: { height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#0A7AFF' },
+  primaryButtonDisabled: { backgroundColor: '#E8ECEA' },
   primaryButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  primaryButtonTextDisabled: { color: '#75807C' },
   attribution: { color: '#7C8783', fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 7, paddingHorizontal: 14 },
 });
-
