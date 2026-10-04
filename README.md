@@ -4,6 +4,8 @@ RestWay 是一个面向旅行者的公共厕所检索与标识识别应用。第
 
 首个测试城市为北京。开发阶段会先用北京的公开地点数据验证“定位—检索—查看详情—导航”闭环，再逐步扩展到其他城市。
 
+在线预览：[https://hhhhhhh-o.github.io/restway/](https://hhhhhhh-o.github.io/restway/)
+
 ## 当前状态
 
 项目已进入 M1 附近厕所最小闭环阶段：
