@@ -94,10 +94,21 @@ export default function HomeScreen() {
     setMessage('正在查询 OpenStreetMap 公开数据…');
 
     try {
-      const results = await fetchNearbyToilets(coordinates, radiusKm * 1_000);
+      const result = await fetchNearbyToilets(coordinates, radiusKm * 1_000);
+      const results = result.toilets;
       setToilets(results);
       setLoadState('ready');
-      setMessage(results.length ? `在 ${radiusKm} 公里内找到 ${results.length} 个公开记录` : `${radiusKm} 公里内暂无公开记录`);
+      if (result.source === 'cache') {
+        const cachedAt = new Date(result.updatedAt).toLocaleString('zh-CN', {
+          month: 'numeric',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        setMessage(`实时服务不可用，显示 ${cachedAt} 的 ${results.length} 条缓存记录`);
+      } else {
+        setMessage(results.length ? `在 ${radiusKm} 公里内找到 ${results.length} 个公开记录` : `${radiusKm} 公里内暂无公开记录`);
+      }
     } catch {
       setLoadState('error');
       setMessage('公开数据服务暂时无法连接，请稍后重试');

@@ -37,6 +37,7 @@ jobs:
         run: pnpm export:web
         env:
           EXPO_BASE_URL: /${{ github.event.repository.name }}
+          EXPO_PUBLIC_RESTWAY_API_URL: ${{ vars.RESTWAY_API_URL }}
 
       - name: Disable Jekyll processing
         run: touch dist/.nojekyll

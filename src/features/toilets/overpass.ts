@@ -5,6 +5,9 @@ const OVERPASS_ENDPOINTS = [
   'https://overpass.private.coffee/api/interpreter',
 ];
 
+const RESTWAY_API_URL = process.env.EXPO_PUBLIC_RESTWAY_API_URL?.replace(/\/$/, '');
+const LOCAL_CACHE_PREFIX = 'restway:toilets:v1';
+
 const DEFAULT_SEARCH_RADIUS_METERS = 2_000;
 const MAX_SEARCH_RADIUS_METERS = 10_000;
 
@@ -19,6 +22,16 @@ type OverpassElement = {
 
 type OverpassResponse = {
   elements?: OverpassElement[];
+  meta?: {
+    mode?: 'live' | 'cache' | 'stale';
+    updatedAt?: string;
+  };
+};
+
+export type ToiletSearchResult = {
+  toilets: Toilet[];
+  source: 'live' | 'cache';
+  updatedAt: string;
 };
 
 function buildQuery(origin: Coordinates, requestedRadiusMeters: number) {
@@ -100,24 +113,104 @@ async function requestEndpoint(endpoint: string, query: string) {
   }
 }
 
+function cacheKey(origin: Coordinates, searchRadiusMeters: number) {
+  return [
+    LOCAL_CACHE_PREFIX,
+    origin.latitude.toFixed(3),
+    origin.longitude.toFixed(3),
+    Math.round(searchRadiusMeters),
+  ].join(':');
+}
+
+function readLocalCache(origin: Coordinates, searchRadiusMeters: number): ToiletSearchResult | null {
+  if (typeof localStorage === 'undefined') return null;
+
+  try {
+    const value = localStorage.getItem(cacheKey(origin, searchRadiusMeters));
+    if (!value) return null;
+    const parsed = JSON.parse(value) as ToiletSearchResult;
+    return Array.isArray(parsed.toilets) ? { ...parsed, source: 'cache' } : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalCache(origin: Coordinates, searchRadiusMeters: number, result: ToiletSearchResult) {
+  if (typeof localStorage === 'undefined') return;
+
+  try {
+    localStorage.setItem(cacheKey(origin, searchRadiusMeters), JSON.stringify(result));
+  } catch {
+    // Storage can be unavailable in private browsing. A failed cache write must not fail the search.
+  }
+}
+
+function parseResponse(data: OverpassResponse, origin: Coordinates) {
+  return (data.elements ?? [])
+    .map((element) => toToilet(element, origin))
+    .filter((toilet): toilet is Toilet => toilet !== null)
+    .sort((first, second) => first.distanceMeters - second.distanceMeters);
+}
+
+async function requestRestWayApi(origin: Coordinates, searchRadiusMeters: number) {
+  if (!RESTWAY_API_URL) return null;
+
+  const url = new URL(`${RESTWAY_API_URL}/api/toilets`);
+  url.searchParams.set('lat', String(origin.latitude));
+  url.searchParams.set('lon', String(origin.longitude));
+  url.searchParams.set('radius', String(searchRadiusMeters));
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`RestWay API request failed with ${response.status}`);
+    return (await response.json()) as OverpassResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function fetchNearbyToilets(
   origin: Coordinates,
   searchRadiusMeters = DEFAULT_SEARCH_RADIUS_METERS,
-) {
+): Promise<ToiletSearchResult> {
   const query = buildQuery(origin, searchRadiusMeters);
   let lastError: unknown;
+
+  try {
+    const apiData = await requestRestWayApi(origin, searchRadiusMeters);
+    if (apiData) {
+      const result: ToiletSearchResult = {
+        toilets: parseResponse(apiData, origin),
+        source: apiData.meta?.mode === 'stale' ? 'cache' : 'live',
+        updatedAt: apiData.meta?.updatedAt ?? new Date().toISOString(),
+      };
+      writeLocalCache(origin, searchRadiusMeters, result);
+      return result;
+    }
+  } catch (error) {
+    lastError = error;
+  }
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
       const data = await requestEndpoint(endpoint, query);
-      return (data.elements ?? [])
-        .map((element) => toToilet(element, origin))
-        .filter((toilet): toilet is Toilet => toilet !== null)
-        .sort((first, second) => first.distanceMeters - second.distanceMeters);
+      const result: ToiletSearchResult = {
+        toilets: parseResponse(data, origin),
+        source: 'live',
+        updatedAt: new Date().toISOString(),
+      };
+      writeLocalCache(origin, searchRadiusMeters, result);
+      return result;
     } catch (error) {
       lastError = error;
     }
   }
+
+  const cached = readLocalCache(origin, searchRadiusMeters);
+  if (cached) return cached;
 
   throw lastError instanceof Error ? lastError : new Error('Unable to load toilet data');
 }

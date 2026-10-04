@@ -19,6 +19,8 @@ RestWay 是一个面向旅行者的公共厕所检索与标识识别应用。第
 - 1、2、5、10 公里可调查找范围
 - 距离排序、免费/无障碍筛选与真实定位后的 Apple 地图导航
 - 公共接口双节点容错、超时和重试状态
+- RestWay API 代理代码、5 分钟热点缓存和 24 小时过期数据兜底
+- 浏览器本地保存最后一次成功结果，实时服务失败时明确标注缓存时间
 - Roadmap 和架构文档
 - TypeScript 类型检查与 Expo Web 导出验证通过
 
@@ -28,7 +30,7 @@ RestWay 是一个面向旅行者的公共厕所检索与标识识别应用。第
 
 - Expo / React Native / TypeScript
 - Expo Router
-- OpenStreetMap / Overpass API
+- Cloudflare Worker 查询代理 / OpenStreetMap / Overpass API
 - Python API 服务
 - PyTorch 目标检测
 - PostgreSQL + PostGIS（后续）
@@ -54,6 +56,19 @@ pnpm web
 4. 提供可在 iPhone Safari 中请求定位权限的 HTTPS 地址。
 
 首次部署前，需要在 GitHub 仓库的 **Settings → Pages → Source** 中选择 **GitHub Actions**。
+
+## 查询代理
+
+`worker/` 包含可部署到 Cloudflare Workers 的 RestWay API。它把手机与公共 Overpass 节点隔开，负责参数校验、双节点切换和缓存：
+
+```bash
+pnpm worker:dev
+pnpm worker:deploy
+```
+
+首次部署需要登录一个 Cloudflare 账号。部署成功后，把 Worker 地址（例如 `https://restway-api.<账号子域>.workers.dev`）填入 GitHub 仓库的 **Settings → Secrets and variables → Actions → Variables**，变量名设为 `RESTWAY_API_URL`，然后重新运行 Pages 工作流。
+
+如果尚未配置这个地址，网页仍会沿用浏览器直连 Overpass 的旧链路；已经成功查询过的相同区域和半径，会在浏览器中保存最后一次结果作为兜底。
 
 ## 文档
 

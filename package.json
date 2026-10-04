@@ -8,6 +8,8 @@
     "start": "expo start",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
+    "worker:dev": "wrangler dev --config worker/wrangler.jsonc",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -26,6 +28,9 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
+    "typescript": "~6.0.3",
+    "wrangler": "4.147.0"
   }
 }

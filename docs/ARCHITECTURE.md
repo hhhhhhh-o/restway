@@ -5,9 +5,12 @@
 ```text
 Expo / React Native Web PWA
           ↓
-OpenStreetMap / Overpass API
-   ├─ 主节点
-   └─ 备用节点与超时降级
+RestWay API（Cloudflare Worker）
+   ├─ 参数校验与 CORS
+   ├─ 5 分钟热点缓存 / 24 小时过期缓存
+   └─ OpenStreetMap / Overpass 双节点切换
+
+浏览器还会保存最后一次成功结果。Worker 未配置时，开发版本暂时回退到浏览器直连 Overpass。
 ```
 
 ## 计划架构
@@ -30,4 +33,5 @@ PostgreSQL + PostGIS（后续）
 - AI 只用于厕所标识、方向箭头和用户图片信息提取。
 - 不在客户端或 Git 仓库中保存私密密钥。
 - 地点数据必须保留来源、更新时间和可信度状态。
-- 公共 Overpass 节点可能过载，客户端必须具备超时、备用节点和可重试错误状态。
+- 公共 Overpass 节点可能过载，查询代理必须具备超时、备用节点、缓存和可重试错误状态。
+- 缓存结果必须标注采集时间，不能伪装成实时查询结果。
