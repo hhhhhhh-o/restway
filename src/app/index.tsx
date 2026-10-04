@@ -16,6 +16,8 @@ const filters: { id: Filter; label: string }[] = [
   { id: 'wheelchair', label: '无障碍' },
 ];
 
+const radiusOptions = [1, 2, 5, 10];
+
 function formatDistance(distanceMeters: number) {
   if (distanceMeters < 1_000) return `${distanceMeters} 米`;
   return `${(distanceMeters / 1_000).toFixed(1)} 公里`;
@@ -84,16 +86,18 @@ export default function HomeScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [isLocating, setIsLocating] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
+  const [searchRadiusKm, setSearchRadiusKm] = useState(2);
 
-  const loadToilets = useCallback(async (coordinates: Coordinates) => {
+  const loadToilets = useCallback(async (coordinates: Coordinates, radiusKm: number) => {
     setLoadState('loading');
+    setToilets([]);
     setMessage('正在查询 OpenStreetMap 公开数据…');
 
     try {
-      const results = await fetchNearbyToilets(coordinates);
+      const results = await fetchNearbyToilets(coordinates, radiusKm * 1_000);
       setToilets(results);
       setLoadState('ready');
-      setMessage(results.length ? `找到 ${results.length} 个公开记录` : '附近 2 公里暂无公开记录');
+      setMessage(results.length ? `在 ${radiusKm} 公里内找到 ${results.length} 个公开记录` : `${radiusKm} 公里内暂无公开记录`);
     } catch {
       setLoadState('error');
       setMessage('公开数据服务暂时无法连接，请稍后重试');
@@ -126,7 +130,7 @@ export default function HomeScreen() {
         setLocationLabel('我的位置');
         setIsTestMode(false);
         setIsLocating(false);
-        void loadToilets(nextOrigin);
+        void loadToilets(nextOrigin, searchRadiusKm);
       },
       () => {
         setIsLocating(false);
@@ -142,7 +146,12 @@ export default function HomeScreen() {
     setLocationLabel('顺义区 · 测试');
     setIsTestMode(true);
     setFilter('all');
-    void loadToilets(SHUNYI_TEST_CENTER);
+    void loadToilets(SHUNYI_TEST_CENTER, searchRadiusKm);
+  };
+
+  const selectSearchRadius = (radiusKm: number) => {
+    setSearchRadiusKm(radiusKm);
+    if (origin) void loadToilets(origin, radiusKm);
   };
 
   return (
@@ -181,6 +190,27 @@ export default function HomeScreen() {
           <Text style={styles.testAreaText}>暂时无法定位？使用顺义区测试位置</Text>
         </Pressable>
 
+        <View style={styles.radiusSection}>
+          <View style={styles.radiusHeading}>
+            <Text style={styles.radiusTitle}>查找范围</Text>
+            <Text style={styles.radiusValue}>{searchRadiusKm} 公里</Text>
+          </View>
+          <View style={styles.radiusOptions}>
+            {radiusOptions.map((radiusKm) => (
+              <Pressable
+                accessibilityRole="button"
+                key={radiusKm}
+                onPress={() => selectSearchRadius(radiusKm)}
+                style={[styles.radiusChip, searchRadiusKm === radiusKm && styles.radiusChipActive]}
+              >
+                <Text style={[styles.radiusChipText, searchRadiusKm === radiusKm && styles.radiusChipTextActive]}>
+                  {radiusKm} km
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         {loadState !== 'idle' && (
           <View style={styles.filters}>
             {filters.map((item) => (
@@ -202,7 +232,7 @@ export default function HomeScreen() {
           <View style={[styles.mapLine, styles.mapLineOne]} />
           <View style={[styles.mapLine, styles.mapLineTwo]} />
           <View style={[styles.mapLine, styles.mapLineThree]} />
-          {loadState !== 'idle' && (
+          {loadState === 'ready' && toilets.length > 0 && (
             <>
               <View style={[styles.mapPin, styles.pinOne]}><Text style={styles.pinText}>WC</Text></View>
               <View style={[styles.mapPin, styles.pinTwo]}><Text style={styles.pinText}>WC</Text></View>
@@ -212,7 +242,7 @@ export default function HomeScreen() {
           <View style={styles.mapMessage}>
             <Text style={styles.mapMessageTitle}>{message}</Text>
             <Text style={styles.mapMessageMeta}>
-              {loadState === 'idle' ? '不会在未定位时自动显示北京中心结果' : '搜索半径 2 公里 · 地图视图下一步接入'}
+              {loadState === 'idle' ? '不会在未定位时自动显示北京中心结果' : `搜索半径 ${searchRadiusKm} 公里 · 地图视图下一步接入`}
             </Text>
           </View>
         </View>
@@ -225,15 +255,17 @@ export default function HomeScreen() {
         )}
 
         {loadState === 'error' && origin && (
-          <Pressable accessibilityRole="button" onPress={() => void loadToilets(origin)} style={styles.retryButton}>
+          <Pressable accessibilityRole="button" onPress={() => void loadToilets(origin, searchRadiusKm)} style={styles.retryButton}>
             <Text style={styles.retryText}>重新加载公开数据</Text>
           </Pressable>
         )}
 
         {loadState === 'ready' && visibleToilets.length === 0 && (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>当前筛选下没有结果</Text>
-            <Text style={styles.emptyText}>可以切换到“全部”，或使用当前位置重新搜索。</Text>
+            <Text style={styles.emptyTitle}>{toilets.length === 0 ? `${searchRadiusKm} 公里内暂无公开记录` : '当前筛选下没有结果'}</Text>
+            <Text style={styles.emptyText}>
+              {toilets.length === 0 ? '这不代表现实中没有厕所，可以扩大查找范围继续搜索。' : '可以切换到“全部”查看未标注设施属性的记录。'}
+            </Text>
           </View>
         )}
 
@@ -276,6 +308,15 @@ const styles = StyleSheet.create({
   chevron: { color: '#94A09C', fontSize: 28 },
   testAreaButton: { alignItems: 'center', paddingVertical: 4, marginBottom: 16 },
   testAreaText: { color: '#0A7AFF', fontSize: 13, fontWeight: '600' },
+  radiusSection: { padding: 15, borderRadius: 18, backgroundColor: '#FFFFFF', marginBottom: 14 },
+  radiusHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
+  radiusTitle: { color: '#26332F', fontSize: 14, fontWeight: '700' },
+  radiusValue: { color: '#08735F', fontSize: 13, fontWeight: '700' },
+  radiusOptions: { flexDirection: 'row', gap: 8 },
+  radiusChip: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 12, backgroundColor: '#EEF1F0' },
+  radiusChipActive: { backgroundColor: '#DDF4EE' },
+  radiusChipText: { color: '#6B7773', fontSize: 13, fontWeight: '600' },
+  radiusChipTextActive: { color: '#08735F' },
   filters: { flexDirection: 'row', gap: 9, marginBottom: 16 },
   filterChip: { borderRadius: 999, backgroundColor: '#E8ECEA', paddingHorizontal: 14, paddingVertical: 9 },
   filterChipActive: { backgroundColor: '#DDF4EE' },

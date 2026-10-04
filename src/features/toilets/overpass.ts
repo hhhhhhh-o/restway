@@ -5,7 +5,8 @@ const OVERPASS_ENDPOINTS = [
   'https://overpass.private.coffee/api/interpreter',
 ];
 
-const SEARCH_RADIUS_METERS = 2_000;
+const DEFAULT_SEARCH_RADIUS_METERS = 2_000;
+const MAX_SEARCH_RADIUS_METERS = 10_000;
 
 type OverpassElement = {
   id: number;
@@ -20,11 +21,15 @@ type OverpassResponse = {
   elements?: OverpassElement[];
 };
 
-function buildQuery(origin: Coordinates) {
+function buildQuery(origin: Coordinates, requestedRadiusMeters: number) {
   const { latitude, longitude } = origin;
+  const searchRadiusMeters = Math.min(
+    Math.max(Math.round(requestedRadiusMeters), 100),
+    MAX_SEARCH_RADIUS_METERS,
+  );
 
   return `[out:json][timeout:20];
-nwr["amenity"="toilets"](around:${SEARCH_RADIUS_METERS},${latitude},${longitude});
+nwr["amenity"="toilets"](around:${searchRadiusMeters},${latitude},${longitude});
 out center;`;
 }
 
@@ -95,8 +100,11 @@ async function requestEndpoint(endpoint: string, query: string) {
   }
 }
 
-export async function fetchNearbyToilets(origin: Coordinates) {
-  const query = buildQuery(origin);
+export async function fetchNearbyToilets(
+  origin: Coordinates,
+  searchRadiusMeters = DEFAULT_SEARCH_RADIUS_METERS,
+) {
+  const query = buildQuery(origin, searchRadiusMeters);
   let lastError: unknown;
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
