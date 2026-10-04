@@ -11,6 +11,8 @@ RestWay API（Cloudflare Worker）
    └─ OpenStreetMap / Overpass 双节点切换
 
 浏览器还会保存最后一次成功结果。Worker 未配置时，开发版本暂时回退到浏览器直连 Overpass。
+
+北京 MVP 额外包含由 GitHub Actions 定期生成、与网页同源发布的数据快照。北京用户优先使用该快照进行本地距离筛选，从而规避 `workers.dev` 和公共 Overpass 节点在国内网络不可达的问题。
 ```
 
 ## 计划架构

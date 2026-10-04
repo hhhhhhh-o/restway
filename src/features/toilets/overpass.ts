@@ -30,8 +30,12 @@ type OverpassResponse = {
 
 export type ToiletSearchResult = {
   toilets: Toilet[];
-  source: 'live' | 'cache';
+  source: 'live' | 'cache' | 'snapshot';
   updatedAt: string;
+};
+
+type BeijingSnapshot = OverpassResponse & {
+  updatedAt?: string;
 };
 
 function buildQuery(origin: Coordinates, requestedRadiusMeters: number) {
@@ -145,11 +149,35 @@ function writeLocalCache(origin: Coordinates, searchRadiusMeters: number, result
   }
 }
 
-function parseResponse(data: OverpassResponse, origin: Coordinates) {
+function parseResponse(data: OverpassResponse, origin: Coordinates, searchRadiusMeters: number) {
   return (data.elements ?? [])
     .map((element) => toToilet(element, origin))
     .filter((toilet): toilet is Toilet => toilet !== null)
+    .filter((toilet) => toilet.distanceMeters <= searchRadiusMeters)
     .sort((first, second) => first.distanceMeters - second.distanceMeters);
+}
+
+function isInsideBeijing(origin: Coordinates) {
+  return origin.latitude >= 39.4 && origin.latitude <= 41.1 && origin.longitude >= 115.4 && origin.longitude <= 117.6;
+}
+
+async function requestBeijingSnapshot(origin: Coordinates, searchRadiusMeters: number) {
+  if (typeof document === 'undefined' || !isInsideBeijing(origin)) return null;
+
+  try {
+    const response = await fetch(new URL('data/beijing-toilets.json', document.baseURI));
+    if (!response.ok) return null;
+    const data = (await response.json()) as BeijingSnapshot;
+    if (!Array.isArray(data.elements) || data.elements.length === 0 || !data.updatedAt) return null;
+
+    return {
+      toilets: parseResponse(data, origin, searchRadiusMeters),
+      source: 'snapshot' as const,
+      updatedAt: data.updatedAt,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function requestRestWayApi(origin: Coordinates, searchRadiusMeters: number) {
@@ -179,11 +207,14 @@ export async function fetchNearbyToilets(
   const query = buildQuery(origin, searchRadiusMeters);
   let lastError: unknown;
 
+  const snapshot = await requestBeijingSnapshot(origin, searchRadiusMeters);
+  if (snapshot) return snapshot;
+
   try {
     const apiData = await requestRestWayApi(origin, searchRadiusMeters);
     if (apiData) {
       const result: ToiletSearchResult = {
-        toilets: parseResponse(apiData, origin),
+        toilets: parseResponse(apiData, origin, searchRadiusMeters),
         source: apiData.meta?.mode === 'stale' ? 'cache' : 'live',
         updatedAt: apiData.meta?.updatedAt ?? new Date().toISOString(),
       };
@@ -198,7 +229,7 @@ export async function fetchNearbyToilets(
     try {
       const data = await requestEndpoint(endpoint, query);
       const result: ToiletSearchResult = {
-        toilets: parseResponse(data, origin),
+        toilets: parseResponse(data, origin, searchRadiusMeters),
         source: 'live',
         updatedAt: new Date().toISOString(),
       };

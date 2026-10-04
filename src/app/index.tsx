@@ -98,7 +98,13 @@ export default function HomeScreen() {
       const results = result.toilets;
       setToilets(results);
       setLoadState('ready');
-      if (result.source === 'cache') {
+      if (result.source === 'snapshot') {
+        const updatedAt = new Date(result.updatedAt).toLocaleDateString('zh-CN', {
+          month: 'numeric',
+          day: 'numeric',
+        });
+        setMessage(`使用 ${updatedAt} 更新的北京公开数据，找到 ${results.length} 条记录`);
+      } else if (result.source === 'cache') {
         const cachedAt = new Date(result.updatedAt).toLocaleString('zh-CN', {
           month: 'numeric',
           day: 'numeric',

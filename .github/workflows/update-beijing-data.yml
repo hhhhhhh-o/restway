@@ -1,0 +1,45 @@
+name: Update Beijing toilet data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * 0'
+  push:
+    branches: [main]
+    paths:
+      - scripts/update-beijing-toilets.mjs
+      - .github/workflows/update-beijing-data.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-beijing-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch Beijing toilet records
+        run: node scripts/update-beijing-toilets.mjs
+
+      - name: Commit updated snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/beijing-toilets.json
+          if git diff --cached --quiet; then
+            echo "No data changes"
+          else
+            git commit -m "data: refresh Beijing toilet snapshot"
+            git push
+          fi

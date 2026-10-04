@@ -21,6 +21,7 @@ RestWay 是一个面向旅行者的公共厕所检索与标识识别应用。第
 - 公共接口双节点容错、超时和重试状态
 - RestWay API 代理代码、5 分钟热点缓存和 24 小时过期数据兜底
 - 浏览器本地保存最后一次成功结果，实时服务失败时明确标注缓存时间
+- GitHub Actions 每周更新北京厕所数据快照，避免国内网络无法访问公共接口时完全不可用
 - Roadmap 和架构文档
 - TypeScript 类型检查与 Expo Web 导出验证通过
 
@@ -69,6 +70,8 @@ pnpm worker:deploy
 首次部署需要登录一个 Cloudflare 账号。部署成功后，把 Worker 地址（例如 `https://restway-api.<账号子域>.workers.dev`）填入 GitHub 仓库的 **Settings → Secrets and variables → Actions → Variables**，变量名设为 `RESTWAY_API_URL`，然后重新运行 Pages 工作流。
 
 如果尚未配置这个地址，网页仍会沿用浏览器直连 Overpass 的旧链路；已经成功查询过的相同区域和半径，会在浏览器中保存最后一次结果作为兜底。
+
+北京范围内会优先读取仓库中的同源数据快照，再根据用户位置和查找半径在手机端筛选。更新工作流位于 `.github/workflows/update-beijing-data.yml`，默认每周更新一次。
 
 ## 文档
 
