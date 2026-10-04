@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: update-beijing-data
@@ -43,3 +45,50 @@ jobs:
             git commit -m "data: refresh Beijing toilet snapshot"
             git push
           fi
+
+  deploy:
+    needs: update
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout refreshed data
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export web app with refreshed snapshot
+        run: pnpm export:web
+        env:
+          EXPO_BASE_URL: /${{ github.event.repository.name }}
+
+      - name: Disable Jekyll processing
+        run: touch dist/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+      - name: Deploy refreshed snapshot
+        id: deployment
+        uses: actions/deploy-pages@v4
