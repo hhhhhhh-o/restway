@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-04T15:07:25.437Z",
+  "updatedAt": "2026-10-18T07:17:35.186Z",
   "elements": [
     {
       "type": "node",
@@ -3159,6 +3159,7 @@
       "lon": 116.6732978,
       "tags": {
         "amenity": "toilets",
+        "fee": "no",
         "name": "公共卫生间",
         "name:zh": "公共卫生间",
         "name:zh-Hans": "公共卫生间",
@@ -13732,6 +13733,42 @@
       }
     },
     {
+      "type": "node",
+      "id": 14272297031,
+      "lat": 39.8943654,
+      "lon": 116.3964555,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14272312100,
+      "lat": 39.8940318,
+      "lon": 116.4001249,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14272374948,
+      "lat": 39.8948727,
+      "lon": 116.401992,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14286228671,
+      "lat": 40.0067505,
+      "lon": 116.363817,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
       "type": "way",
       "id": 40632240,
       "center": {
@@ -14454,7 +14491,10 @@
         "amenity": "toilets",
         "building": "yes",
         "building:levels": "1",
+        "name": "洗手間",
+        "name:en": "Toilets",
         "name:ru": "Туалет",
+        "name:zh": "洗手間",
         "toilets:disposal": "flush"
       }
     },
@@ -17324,6 +17364,9 @@
         "indoor": "room",
         "level": "-1",
         "name": "卫生间",
+        "name:en": "Bathroom",
+        "name:ru": "Ванная комната",
+        "name:zh": "卫生间",
         "room": "toilet"
       }
     },
@@ -22397,6 +22440,25 @@
         14205421495,
         14205421496,
         14205421493
+      ],
+      "tags": {
+        "amenity": "toilets",
+        "building": "yes"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1568155382,
+      "center": {
+        "lat": 39.9720579,
+        "lon": 116.327367
+      },
+      "nodes": [
+        14282551722,
+        14282551720,
+        14282551727,
+        14282551724,
+        14282551722
       ],
       "tags": {
         "amenity": "toilets",
