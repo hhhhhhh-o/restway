@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-18T07:17:35.186Z",
+  "updatedAt": "2026-10-25T07:39:32.368Z",
   "elements": [
     {
       "type": "node",
@@ -2648,8 +2648,8 @@
     {
       "type": "node",
       "id": 4168365889,
-      "lat": 39.913991,
-      "lon": 116.4002459,
+      "lat": 39.9140368,
+      "lon": 116.4001683,
       "tags": {
         "amenity": "toilets"
       }
@@ -4962,8 +4962,8 @@
     {
       "type": "node",
       "id": 6731290806,
-      "lat": 39.9371443,
-      "lon": 116.3885151,
+      "lat": 39.937166,
+      "lon": 116.3885728,
       "tags": {
         "amenity": "toilets",
         "changing_table": "no",
@@ -13764,6 +13764,96 @@
       "id": 14286228671,
       "lat": 40.0067505,
       "lon": 116.363817,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298370801,
+      "lat": 40.017763,
+      "lon": 116.3890604,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298370803,
+      "lat": 39.8964486,
+      "lon": 116.396399,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298370804,
+      "lat": 39.9432601,
+      "lon": 116.3875447,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298370805,
+      "lat": 39.9240526,
+      "lon": 116.3574447,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298370901,
+      "lat": 39.8935909,
+      "lon": 116.4018021,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298370904,
+      "lat": 39.8947918,
+      "lon": 116.39259,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298371001,
+      "lat": 39.8943535,
+      "lon": 116.4029014,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298371003,
+      "lat": 39.8954237,
+      "lon": 116.4028963,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298371004,
+      "lat": 39.9383324,
+      "lon": 116.3877872,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14298371101,
+      "lat": 39.9248438,
+      "lon": 116.3577363,
       "tags": {
         "amenity": "toilets"
       }
