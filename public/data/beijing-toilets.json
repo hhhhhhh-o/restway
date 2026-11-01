@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-25T07:39:32.368Z",
+  "updatedAt": "2026-11-01T09:22:17.470Z",
   "elements": [
     {
       "type": "node",
@@ -13859,6 +13859,33 @@
       }
     },
     {
+      "type": "node",
+      "id": 14320278001,
+      "lat": 40.0581525,
+      "lon": 116.6085182,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14320437101,
+      "lat": 40.0550728,
+      "lon": 116.608305,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14320791001,
+      "lat": 40.0539044,
+      "lon": 116.6115189,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
       "type": "way",
       "id": 40632240,
       "center": {
@@ -19092,7 +19119,8 @@
       ],
       "tags": {
         "amenity": "toilets",
-        "building": "yes"
+        "building": "yes",
+        "building:levels": "1"
       }
     },
     {
