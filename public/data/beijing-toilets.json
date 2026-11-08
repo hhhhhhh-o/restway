@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-01T09:22:17.470Z",
+  "updatedAt": "2026-11-08T09:06:51.436Z",
   "elements": [
     {
       "type": "node",
@@ -13881,6 +13881,33 @@
       "id": 14320791001,
       "lat": 40.0539044,
       "lon": 116.6115189,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14344417001,
+      "lat": 39.9240122,
+      "lon": 116.3961723,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14357655049,
+      "lat": 39.9842626,
+      "lon": 116.0618992,
+      "tags": {
+        "amenity": "toilets"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14357655050,
+      "lat": 39.9663437,
+      "lon": 116.0566142,
       "tags": {
         "amenity": "toilets"
       }
